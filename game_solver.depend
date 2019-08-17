@@ -1,0 +1,8 @@
+# depslib dependency file v1.0
+1561160493 source:c:\agh\s6\apto\game_solver\main.cpp
+	<iostream>
+	<cstdio>
+	<string>
+	<utility>
+	<vector>
+
