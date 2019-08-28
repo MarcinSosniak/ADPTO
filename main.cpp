@@ -3,6 +3,9 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
 
 
 #define TYPE_START '.'
@@ -21,6 +24,23 @@ using namespace std;
 int width = 0;
 int height = 0;
 int max_res_size = 0;
+
+
+string get_str_from_int_0_to_7(int in)
+{
+    switch(in)
+    {
+        case 0: return "0";
+        case 1: return "1";
+        case 2: return "2";
+        case 3: return "3";
+        case 4: return "4";
+        case 5: return "5";
+        case 6: return "6";
+        case 7: return "7";
+    }
+    throw string("logic error");
+}
 
 
 
@@ -203,10 +223,6 @@ public:
                             }
                         }
                     }
-                }
-                if(i==5 )
-                {
-                    printf("");
                 }
                 m=1;
                 // MOVE 1 TOP RIGHT
@@ -447,7 +463,7 @@ public:
             for(int k=1;k<_w-1;k++)
             {
                 Node* node=&((*this)[i][k]);
-                printf("(%d,%d): \'%c\' [(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d)]\n",i,k,node->type
+                printf("(%d,%d) [%d]: \'%c\' [(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d),(%d,fEnd=%d)]\n",i,k,node,node->type
                        ,node->moves[0].node,node->moves[0].fEnd
                        ,node->moves[1].node,node->moves[1].fEnd
                        ,node->moves[2].node,node->moves[2].fEnd
@@ -493,7 +509,7 @@ void build_matrix_from_stdin(TwoDimArray& m)
             }
         }
     }
-    m.print_self();
+    //m.print_self();
 }
 
 
@@ -517,7 +533,16 @@ pair<string,Node*> dummy_dfs_move(TwoDimArray& tda,Node* cn, string old);
 pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray &tda,int move_nr);
 pair<string,Node*> dummy_dfs_move_single(TwoDimArray& tda,Node* cn, string old, int nr);
 
-
+bool make_move_f_find_start(Node* cn,TwoDimArray& tda,int move_nr)
+{
+    if (cn->moves[move_nr]!=nullptr)
+    {
+        Node* tn=cn;
+        return false;
+    }
+    else
+        return false;
+}
 
 pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
 {
@@ -571,13 +596,13 @@ pair<string,Node*> dummy_dfs_move_single(TwoDimArray& tda,Node* cn, string old, 
     auto ret= make_move_counting_gems(cn,tda,nr);
     if (ret.first>0)
     {
-        string out=old + to_string(nr);
+        string out=old + get_str_from_int_0_to_7(nr);
         pair<string,Node*> out_p= make_pair(out,ret.second);
         return out_p;
     }
     else if(ret.second !=nullptr)
     {
-        auto ret0_2= dummy_dfs_move(tda,ret.second,old + to_string(nr));
+        auto ret0_2= dummy_dfs_move(tda,ret.second,old + get_str_from_int_0_to_7(nr));
         if (ret0_2.first != string(""))
             return ret0_2;
     }
@@ -635,6 +660,19 @@ class BFS_no_solution_exception
 };
 
 
+bool check_if_void_diamond(TwoDimArray& tda,Node* start_node)
+{
+    fast_que<Node> q(0);
+    tda.clear_visited();
+    q.push(start_node);
+    while(q.size_q()>0)
+    {
+        auto node = q.pop();
+    }
+
+}
+
+
 pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Node * cn)
 {
     tda.clear_visited();
@@ -649,9 +687,9 @@ pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Nod
             {
                 auto res= make_move_counting_gems(curr.second,tda,i);
                 if(res.first>0)
-                    return make_pair(curr.first + to_string(i),res.second);
+                    return make_pair(curr.first + get_str_from_int_0_to_7(i),res.second);
                 else if(res.second !=nullptr)
-                    q.push(make_pair(curr.first + to_string(i),res.second));
+                    q.push(make_pair(curr.first + get_str_from_int_0_to_7(i),res.second));
             }
         }
     }
@@ -660,10 +698,13 @@ pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Nod
 
 
 
+
+
+
 string strategy_dummy_bfs(TwoDimArray& tda)
 {
     Node * cn=tda.first;
-    fast_que<pair<string,Node*>> q(tda._h*tda._w*8);
+    fast_que<pair<string,Node*>> q(0);
     string out=string("");
     try
     {
@@ -684,19 +725,13 @@ string strategy_dummy_bfs(TwoDimArray& tda)
 
 
 
-
-
-
-
-
-
 int actual_main()
 {
-        string sLineBuff;
+    string sLineBuff;
 	//char* sLineBuff;
-    const char* sHeight = sLineBuff.c_str();
 	char* sWidth;
 	getline(cin, sLineBuff);
+	const char* sHeight = sLineBuff.c_str();
 	//sLineBuff=line.to_c_str
 	//scanf("%[^\n]", sLineBuff);
 
@@ -724,8 +759,9 @@ int actual_main()
 	TwoDimArray m(height,width);
     build_matrix_from_stdin(m);
     m.calcualte_connections();
-    m.print_connections(1);
-
+    //m.print_connections(1);
+    //m.print_all();
+    /*
     for(int i=0;i<height;i++)
     {
         for(int k=0;k<width;k++)
@@ -734,6 +770,7 @@ int actual_main()
         }
         printf("\n");
     }
+
     printf("\n\n   ");
     //m.print_all();
     printf("\n 0123456789\n");
@@ -746,9 +783,10 @@ int actual_main()
         }
         printf("\n");
     }
+    */
     //cout<<strategy_dummy_dfs(m);
-    cout<<strategy_dummy_bfs(m);
-    while(true)
+    cout<<strategy_dummy_bfs(m)<<"\n";
+    /*while(true)
     {
         int x;
         int y;
@@ -761,7 +799,7 @@ int actual_main()
 
     string hue;
     cin>>hue;
-	return 0;
+	*/return 0;
 }
 
 
