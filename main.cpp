@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdexcept>
+#include <sstream>
 
 
 #define TYPE_START '.'
@@ -164,12 +165,20 @@ public:
     TwoDimArray(TwoDimArray& other) = delete;
 
     TwoDimArray(TwoDimArray&& other) :node_array(other.node_array), _h(other._h), _w(other._w),
-                    first(other.first), gem_counter(other.gem_counter), _f_init(other._f_init)
+                    first(other.first), gem_counter(other.gem_counter), _f_init(other._f_init) {}
+
+    TwoDimArray& operator=(TwoDimArray& other) = delete;
+
+    TwoDimArray& operator=(TwoDimArray&& other)
     {
-        ;
+        node_array=other.node_array;
+        _h=other._h;
+        _w=other._w;
+        first=other.first;
+        gem_counter=other.gem_counter;
+        _f_init=false;
+        return *this;
     }
-
-
 
 	Node* operator[](int i)
 	{
@@ -203,6 +212,7 @@ public:
 
 	void calcualte_connections()
 	{
+	    gem_counter=0;
 	    _f_init=true;
         for(int i=1;i<_h-1;i++)
         {
@@ -212,6 +222,9 @@ public:
                 Node* cN=&((*this)[i][k]);
                 if (cN->type==TYPE_WALL || cN->type==TYPE_MINE)
                     continue;
+
+                if (cN->type==TYPE_GEM)
+                    gem_counter++;
                 //MOVE 0 TOP
                  if(cN->moves[0].node==nullptr)
                 {
@@ -503,9 +516,26 @@ public:
     TwoDimArray clone_with_wrong_connections()
     {
         TwoDimArray outArr(_h,_w);
-        outArr.first=first;
-        outArr.gem_counter= gem_counter;
-        memcpy(outArr.node_array,node_array,_h*_w * sizeof(Node));
+        for(int i=0;i<_h*_w;i++)
+        {
+            if(this->node_array[i].type==TYPE_START)
+                outArr.first=&(outArr.node_array[i]);
+            outArr.node_array[i].type=this->node_array[i].type;
+        }
+        outArr.gem_counter= -1;
+        return outArr;
+    }
+
+    TwoDimArray* create_clone_with_wrong_connections()
+    {
+        TwoDimArray* outArr= new TwoDimArray(_h,_w);
+        for(int i=0;i<_h*_w;i++)
+        {
+            if(this->node_array[i].type==TYPE_START)
+                outArr->first=&(outArr->node_array[i]);
+            outArr->node_array[i].type=this->node_array[i].type;
+        }
+        outArr->gem_counter= -1;
         return outArr;
     }
 
@@ -557,20 +587,6 @@ void build_matrix_from_stdin(TwoDimArray& m)
 
 
 
-pair<string,Node*> dummy_dfs_move(TwoDimArray& tda,Node* cn, string old);
-pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray &tda,int move_nr);
-pair<string,Node*> dummy_dfs_move_single(TwoDimArray& tda,Node* cn, string old, int nr);
-/*
-bool make_move_f_find_start(Node* cn,TwoDimArray& tda,int move_nr)
-{
-    if (cn->moves[move_nr].node!=nullptr)
-    {
-        Node* tn=cn;
-        return false;
-    }
-    else
-        return false;
-}*/
 
 pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
 {
@@ -617,71 +633,6 @@ pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
 
 
 
-// --------------------------------------------DUMMY DFS------------------------------------------------------------------------------------------------------
-
-pair<string,Node*> dummy_dfs_move_single(TwoDimArray& tda,Node* cn, string old, int nr)
-{
-    auto ret= make_move_counting_gems(cn,tda,nr);
-    if (ret.first>0)
-    {
-        string out=old + get_str_from_int_0_to_7(nr);
-        pair<string,Node*> out_p= make_pair(out,ret.second);
-        return out_p;
-    }
-    else if(ret.second !=nullptr)
-    {
-        auto ret0_2= dummy_dfs_move(tda,ret.second,old + get_str_from_int_0_to_7(nr));
-        if (ret0_2.first != string(""))
-            return ret0_2;
-    }
-    return make_pair(string(""),nullptr);
-}
-
-
-pair<string,Node*> dummy_dfs_move(TwoDimArray& tda,Node* cn, string old)
-{
-    if(cn==nullptr || cn==0)
-        throw string("cn is nullptr where it shouldn;t");
-    if(true==cn->fVisited)
-    {
-        return make_pair(string(""),nullptr);
-    }
-
-
-
-    pair <string,Node*> p;
-    for(int i=0;i< 8;i++)
-    {
-        p=dummy_dfs_move_single(tda,cn,old,i);
-        if(p.first!=string(""))
-        {
-            return p;
-        }
-    }
-    return make_pair(string(""),nullptr);
-}
-
-
-
-string strategy_dummy_dfs(TwoDimArray& tda)
-{
-    string out=string("");
-    Node* cn=tda.first;
-    while(tda.gem_counter>0)
-    {
-        if(cn==nullptr || cn==0)
-            throw string(" hue1");
-        auto single_move=dummy_dfs_move(tda,cn,string(""));
-        cn=single_move.second;
-        out+=single_move.first;
-        tda.clear_visited();
-        int x,y;
-        tda.find_el(*cn,x,y);
-        printf("%s(%d,%d)\n",single_move.first.c_str(),x,y);
-    }
-    return out;
-}
-
 class BFS_no_solution_exception
 {
 
@@ -711,33 +662,91 @@ pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Nod
             }
         }
     }
-    throw  BFS_no_solution_exception();
+    throw  cn;
+    throw BFS_no_solution_exception();
 }
 
 
 
+void strategy_dummy_bfs_fill_with_tmp_mines(TwoDimArray& arr,std::vector<std::pair<std::pair<int,int>,char>> temporary_mines)
+{
+    for(auto& tmp_mine : temporary_mines)
+    {
+        arr[tmp_mine.first.first][tmp_mine.first.second].type=TYPE_MINE;
+    }
+}
 
+void strategy_dummy_bfs_remove_tmp_mines(TwoDimArray& arr,std::vector<std::pair<std::pair<int,int>,char>> temporary_mines)
+{
+    for(auto& tmp_mine : temporary_mines)
+    {
+        arr[tmp_mine.first.first][tmp_mine.first.second].type=tmp_mine.second;
+    }
+}
 
-
-string strategy_dummy_bfs(TwoDimArray& tda)
+void strategy_dummy_bfs(TwoDimArray& tda)
 {
     Node * cn=tda.first;
     fast_que<pair<string,Node*>> q(0);
-    string out=string("");
-    try
+    stringstream out;
+    TwoDimArray tdaCpy=TwoDimArray(0,0);
+    std::vector<std::pair<std::pair<int,int>,char>> temporary_mines;
+    while(true)
     {
-        while(tda.gem_counter>0)
+        try
         {
-            auto res=bfs_step(tda,q,cn);
-            out+=res.first;
-            cn=res.second;
+            tdaCpy= tda.clone_with_wrong_connections();
+            strategy_dummy_bfs_fill_with_tmp_mines(tdaCpy,temporary_mines);
+            tdaCpy.calcualte_connections();
+
+            cn=tdaCpy.first;
+            q.clear_q();
+            while(tdaCpy.gem_counter>0) // if there is a simple solution there will be no throw
+            {
+                auto res=bfs_step(tdaCpy,q,cn);
+                out<<res.first;
+                cn=res.second;
+            }
+            if(temporary_mines.size()==0)
+            {
+                cout<<out.str()<<"\n";
+                return;
+                // FOR  SOME FUUUCKING REASON return and cout caused crash
+            }
+            strategy_dummy_bfs_remove_tmp_mines(tdaCpy,temporary_mines);
+            tdaCpy.calcualte_connections();
+            try{
+                while(tdaCpy.gem_counter>0) // if there is a simple solution there will be no throw
+                {
+                    auto res=bfs_step(tdaCpy,q,cn);
+                    out<<res.first;
+                    cn=res.second;
+                }
+            }
+            catch (Node *)
+            {
+                cout<<"BRAK\n";
+                return;
+            }
+            cout<<out.str()<<"\n";
+            return;
+
+
+        }
+        catch (BFS_no_solution_exception ex)
+        {
+            cout<<"BRAK\n";
+            return;
+        }
+        catch(Node * thrown_last_start_node)
+        {
+            int x,y;
+            tdaCpy.find_el(*thrown_last_start_node,x,y);
+            temporary_mines.push_back(make_pair(make_pair(x,y),thrown_last_start_node->type));
         }
     }
-    catch (BFS_no_solution_exception ex)
-    {
-        return string("BRAK");
-    }
-    return out;
+    cout<<"BRAK\n";
+    return;
 }
 
 
@@ -759,7 +768,7 @@ int actual_main()
 		{
 
 			throw string("Invalid input on line 1");
-			exit(-1);
+			return 0;
 		}
 		if (sLineBuff[i] == ' ')
 		{
@@ -803,7 +812,9 @@ int actual_main()
     }
     */
     //cout<<strategy_dummy_dfs(m);
-    cout<<strategy_dummy_bfs(m)<<"\n";
+    //cout<<strategy_dummy_bfs(m).str()<<"\n";
+    //printf("%s\n",strategy_dummy_bfs(m).c_str());
+    strategy_dummy_bfs(m);
     /*while(true)
     {
         int x;
