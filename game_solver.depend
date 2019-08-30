@@ -6,3 +6,13 @@
 	<utility>
 	<vector>
 
+1567022125 source:c:\agh\s6\adpto_project\adpto\main.cpp
+	<iostream>
+	<cstdio>
+	<string>
+	<utility>
+	<vector>
+	<stdlib.h>
+	<string.h>
+	<stdio.h>
+

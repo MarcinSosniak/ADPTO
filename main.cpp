@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdexcept>
 
 
 #define TYPE_START '.'
@@ -153,11 +154,23 @@ public:
 	int _w;
 	Node* first;
 	int gem_counter;
+	bool _f_init=false;
 
 	TwoDimArray(int h, int w) : _h(h), _w(w), first(nullptr),gem_counter(0)
 	{
 		node_array = new Node[w * h];
 	}
+
+    TwoDimArray(TwoDimArray& other) = delete;
+
+    TwoDimArray(TwoDimArray&& other) :node_array(other.node_array), _h(other._h), _w(other._w),
+                    first(other.first), gem_counter(other.gem_counter), _f_init(other._f_init)
+    {
+        ;
+    }
+
+
+
 	Node* operator[](int i)
 	{
 		return node_array + (i * _w);
@@ -190,6 +203,7 @@ public:
 
 	void calcualte_connections()
 	{
+	    _f_init=true;
         for(int i=1;i<_h-1;i++)
         {
             for(int k=1;k<_w-1;k++)
@@ -421,6 +435,7 @@ public:
 	}
 	void print_connections()
     {
+        if(!_f_init) throw logic_error("usage of uninitalised matrix");
         for(int n=0;n<_w*_h;n++)
         {
             Node* cN=&node_array[n];
@@ -441,6 +456,7 @@ public:
     }
     void print_connections(int i)
     {
+        if(!_f_init) throw logic_error("usage of uninitalised matrix");
         for(int n=0;n<_w*_h;n++)
         {
             Node* cN=&node_array[n];
@@ -458,6 +474,7 @@ public:
     }
     void print_all()
     {
+        if(!_f_init) throw logic_error("usage of uninitalised matrix");
         for(int i=1;i<_h-1;i++)
         {
             for(int k=1;k<_w-1;k++)
@@ -482,6 +499,17 @@ public:
             (*(node_array+i)).fVisited=false;
         }
     }
+
+    TwoDimArray clone_with_wrong_connections()
+    {
+        TwoDimArray outArr(_h,_w);
+        outArr.first=first;
+        outArr.gem_counter= gem_counter;
+        memcpy(outArr.node_array,node_array,_h*_w * sizeof(Node));
+        return outArr;
+    }
+
+
     ~TwoDimArray()
     {
         delete node_array;
@@ -532,17 +560,17 @@ void build_matrix_from_stdin(TwoDimArray& m)
 pair<string,Node*> dummy_dfs_move(TwoDimArray& tda,Node* cn, string old);
 pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray &tda,int move_nr);
 pair<string,Node*> dummy_dfs_move_single(TwoDimArray& tda,Node* cn, string old, int nr);
-
+/*
 bool make_move_f_find_start(Node* cn,TwoDimArray& tda,int move_nr)
 {
-    if (cn->moves[move_nr]!=nullptr)
+    if (cn->moves[move_nr].node!=nullptr)
     {
         Node* tn=cn;
         return false;
     }
     else
         return false;
-}
+}*/
 
 pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
 {
@@ -558,7 +586,7 @@ pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
                 tn->type=TYPE_EMPTY;
                 out++;
             }
-            tn->fVisited=true;
+            //tn->fVisited=true;
             tn=tn->moves[move_nr].node;
         }
         if(TYPE_GEM==tn->type)
@@ -567,7 +595,7 @@ pair<int, Node*> make_move_counting_gems(Node* cn,TwoDimArray& tda,int move_nr)
             tn->type=TYPE_EMPTY;
             out++;
         }
-        tn->fVisited=true;
+        //tn->fVisited=true;
 
         tn=tn->moves[move_nr].node;
 
@@ -660,18 +688,6 @@ class BFS_no_solution_exception
 };
 
 
-bool check_if_void_diamond(TwoDimArray& tda,Node* start_node)
-{
-    fast_que<Node> q(0);
-    tda.clear_visited();
-    q.push(start_node);
-    while(q.size_q()>0)
-    {
-        auto node = q.pop();
-    }
-
-}
-
 
 pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Node * cn)
 {
@@ -681,6 +697,8 @@ pair<string,Node*> bfs_step(TwoDimArray& tda,fast_que<pair<string,Node*>>& q,Nod
     while(q.size_q()>0)
     {
         auto curr=q.pop();
+        if(curr.second->fVisited) continue;
+        curr.second->fVisited=true;
         for(int i=0;i<8;i++)
         {
             if(curr.second->moves[i].node != nullptr)
